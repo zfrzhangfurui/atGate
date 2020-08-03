@@ -17,6 +17,7 @@ connectDB();
 const transactions = require('./routes/transactions');
 const auth = require('./routes/auth');
 const user = require('./routes/user');
+const community = require('./routes/community');
 const app = express();
 //Body parser
 app.use(express.json())
@@ -29,8 +30,9 @@ if (process.env.NODE_ENV === 'development') {
 //app.use(logger);
 //Mount routers
 app.use('/api/v1/auth', auth);
-app.use('/api/v1/transaction', transactions);
+app.use('/api/v1/transactions', transactions);
 app.use('/api/v1/user', user);
+app.use('/api/v1/community', community);
 
 app.use(errorHandler);
 //console.log(process.env.PORT);

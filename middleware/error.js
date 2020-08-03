@@ -17,7 +17,6 @@ const errorHandler = (err, req, res, next) => {
         error = new ErrorResponse(message, 404);
     }
     //Mongoose duplicate key
-    console.log(err.code);
     if (err.code === 11000) {
         const message = `Error code: ${err.code}. Duplicate key error : at index ${err.index}`;
         error = new ErrorResponse(message, 400);
@@ -31,6 +30,7 @@ const errorHandler = (err, req, res, next) => {
 
     res.status(error.statusCode || 500).json({
         success: false,
+        errorCode: err.code,
         error: error.message || 'Server Error'
     });
 }

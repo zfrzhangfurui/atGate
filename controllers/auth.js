@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Community = require('../models/Community');
 const errorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
 const ErrorResponse = require('../utils/errorResponse');
@@ -8,24 +9,40 @@ const ErrorResponse = require('../utils/errorResponse');
 //@access Public
 
 exports.register = asyncHandler(async (req, res, next) => {
-    const { name, email, password, role } = req.body;
+    const { email, password, community } = req.body;
 
     //Create user
     const user = await User.create({
-        name, email, password, role
+        email, password, community
     })
-    // //Create token
-    // const token = user.getSignedJwtToken();
-
-    // res.status(200).json({success:true,token});
-
+    if (user) {
+        req.user = user;
+        console.log(req.user._id);
+    }
+    next();
     //Create token and send response
-    sendTokenResponse(user, 200, res);
+    // sendTokenResponse(user, 200, res);
 })
 
 // @desc Login user
 //@route POST /api/v1/auth/login
 //@access Public
+
+exports.validateEmail = asyncHandler(async (req, res, next) => {
+    const user = await User.findOne({ email: req.params.email });
+    if (!user) {
+        return res.status(200).json({
+            success: true,
+            isUserExsits: false
+        })
+    }
+
+    return res.status(200).json({
+        success: true,
+        isUserExsits: true
+    })
+})
+
 
 exports.login = asyncHandler(async (req, res, next) => {
     const { email, password } = req.body;
@@ -48,19 +65,41 @@ exports.login = asyncHandler(async (req, res, next) => {
     if (!isMatch) {
         return next(new errorResponse('Invalid credentials', 401));
     }
-
+    req.user = user;
+    next();
     // //Create token
     // const token = user.getSignedJwtToken();
 
     // res.status(200).json({success:true,token});
-    sendTokenResponse(user, 200, res);
+    // sendTokenResponse(user, 200, res);
 })
 
 
 //Get token from model ,create cookie and send response
-const sendTokenResponse = (user, statusCode, res) => {
+// exports.sendTokenResponse =(user, statusCode, res) => {
+//     //Create token
+//     const token = user.getSignedJwtToken();
+
+//     const options = {
+//         expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000),
+//         httpOnly: true
+//     }
+
+
+//     //production mode set secure to true,it means only https protocol is allowed 
+//     if (process.env.NODE_ENV === 'production') {
+//         options.secure = true;
+//     }
+//     res.status(statusCode).cookie('token', token, options).json({
+//         success: true,
+//         token
+//     })
+// }
+
+
+exports.sendTokenResponse = (req, res) => {
     //Create token
-    const token = user.getSignedJwtToken();
+    const token = req.user.getSignedJwtToken();
 
     const options = {
         expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000),
@@ -72,7 +111,7 @@ const sendTokenResponse = (user, statusCode, res) => {
     if (process.env.NODE_ENV === 'production') {
         options.secure = true;
     }
-    res.status(statusCode).cookie('token', token, options).json({
+    res.status(200).cookie('token', token, options).json({
         success: true,
         token
     })
