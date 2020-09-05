@@ -2,9 +2,6 @@ const mongoose = require("mongoose")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const UserSchema = new mongoose.Schema({
-    name: {
-        type: String,
-    },
     email: {
         type: String,
         required: [true, "Please add an email"],
@@ -14,8 +11,10 @@ const UserSchema = new mongoose.Schema({
             "Please add a valid email",
         ],
     },
-    community: {
-        type: String,
+    community_id: {
+        type: mongoose.Schema.ObjectId,
+        ref: "Community",
+        require: true
     }
     ,
     role: {

@@ -2,22 +2,20 @@ const User = require('../models/User');
 const Community = require('../models/Community');
 const errorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
-const ErrorResponse = require('../utils/errorResponse');
 
 // @desc Register user
 //@route POST /api/v1/auth/register
 //@access Public
 
 exports.register = asyncHandler(async (req, res, next) => {
-    const { email, password, community } = req.body;
-
+    const { email, password, community_id } = req.body;
     //Create user
     const user = await User.create({
-        email, password, community
+        email, password, community_id
     })
+    console.log(user);
     if (user) {
-        req.user = user;
-        console.log(req.user._id);
+        res.locals.user = user;
     }
     next();
     //Create token and send response
@@ -33,13 +31,13 @@ exports.validateEmail = asyncHandler(async (req, res, next) => {
     if (!user) {
         return res.status(200).json({
             success: true,
-            isUserExsits: false
+            isEmailAvailable: true
         })
     }
 
     return res.status(200).json({
         success: true,
-        isUserExsits: true
+        isEmailAvailable: false
     })
 })
 
@@ -65,41 +63,15 @@ exports.login = asyncHandler(async (req, res, next) => {
     if (!isMatch) {
         return next(new errorResponse('Invalid credentials', 401));
     }
-    req.user = user;
+    res.locals.user = user;
     next();
-    // //Create token
-    // const token = user.getSignedJwtToken();
-
-    // res.status(200).json({success:true,token});
-    // sendTokenResponse(user, 200, res);
 })
 
-
-//Get token from model ,create cookie and send response
-// exports.sendTokenResponse =(user, statusCode, res) => {
-//     //Create token
-//     const token = user.getSignedJwtToken();
-
-//     const options = {
-//         expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000),
-//         httpOnly: true
-//     }
-
-
-//     //production mode set secure to true,it means only https protocol is allowed 
-//     if (process.env.NODE_ENV === 'production') {
-//         options.secure = true;
-//     }
-//     res.status(statusCode).cookie('token', token, options).json({
-//         success: true,
-//         token
-//     })
-// }
 
 
 exports.sendTokenResponse = (req, res) => {
     //Create token
-    const token = req.user.getSignedJwtToken();
+    const token = res.locals.user.getSignedJwtToken();
 
     const options = {
         expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000),

@@ -7,8 +7,8 @@ exports.validateAndAddSeqFields = asyncHandler(async (req, res, next) => {
     let transactions = [];
     let err;
     for (let [index, item] of req.body.entries()) {
-        item.createdBy = req.user._id;
-        item.community = req.user.community;
+        item.createdBy = res.locals.user._id;
+        item.community_id = res.locals.user.community_id;
         const i = await Counter.findOneAndUpdate({ name: 'transAutoInc' }, { $inc: { seq: 1 } })
         item.seq = 10000 + i.seq;
         let doc = new Transaction(item);

@@ -2,13 +2,10 @@ const mongoose = require("mongoose")
 const moment = require("moment");
 const TransactionSchema = new mongoose.Schema({
     name: {
-        type: String,
-        trim: true,
-        maxlength: [50, "Name can not be more than 50 characters"],
+        type: String
     },
-    member_Id: {
-        type: Number,
-        require: true,
+    member_id: {
+        type: String,
     },
     transfer: {
         type: Number,
@@ -32,7 +29,7 @@ const TransactionSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    community: {
+    community_id: {
         type: String,
         required: true,
     },

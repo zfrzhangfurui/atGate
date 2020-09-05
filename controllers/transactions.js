@@ -7,7 +7,10 @@ const asyncHandler = require('../middleware/async');
 //@route GET /api/v1/transactions/get_transactions
 //@access private
 exports.getTransactions = asyncHandler(async (req, res, next) => {
-    const transactions = await Transaction.find({ community: req.user.community }, 'name member_Id p c g type createdAt seq entryTime transfer');
+    if (res.locals.user.role !== 'admin' && res.locals.user.role !== 'root') {
+        return next(new errorResponse('Unauthorized to access this route', 401));
+    }
+    const transactions = await Transaction.find({ community: res.locals.user.community, createdBy: res.locals.user._id }, 'member_id name p c g type createdAt seq entryTime transfer');
     let trans_clone = [];
     for (let item of transactions) {
         trans_clone.push(item.toClient());
@@ -21,7 +24,7 @@ exports.getTransactions = asyncHandler(async (req, res, next) => {
 
 
 // @desc Create new transactions
-//@route GET /api/v1/transactions/batch_create
+//@route POST /api/v1/transactions/batch_create
 //@access Private
 exports.createTransactions = asyncHandler(async (req, res, next) => {
     let transactionsToClient = [];
@@ -56,12 +59,12 @@ exports.updateTransactions = asyncHandler(async (req, res, next) => {
                 const transaction = await Transaction.findByIdAndUpdate(
                     i.trans_id,
                     {
+                        name: i.name,
                         createdAt: i.createdAt,
                         g: i.g,
                         p: i.p,
                         c: i.c,
-                        member_Id: i.member_Id,
-                        name: i.name,
+                        member_id: i.member_id,
                         transfer: i.transfer,
                         type: i.type
 
@@ -72,7 +75,7 @@ exports.updateTransactions = asyncHandler(async (req, res, next) => {
                     next(err);
                 }
                 );
-                // console.log(transaction);
+                console.log(transaction);
                 list.push(transaction);
             }
             // console.log(list);
@@ -111,4 +114,19 @@ exports.deleteTransaction = asyncHandler(async (req, res, next) => {
     }
     res.status(200).json({ success: true });
 
+})
+
+exports.deleteAllTransactionAfterSubmit = asyncHandler(async (req, res, next) => {
+    const createdBy = res.locals.user._id;
+    const community_id = res.locals.user.community_id;
+    const deleted = await Transaction.deleteMany({ createdBy, community_id }, function (err) {
+        if (err) {
+            next(err);
+        }
+    })
+    console.log(deleted);
+    if (deleted) {
+        console.log(deleted);
+        res.status(200).json({ success: true })
+    }
 })

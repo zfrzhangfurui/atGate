@@ -1,19 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
-const { getCommunities, becomeMemberWithoutName, linkToMember, getMembers } = require('../controllers/community')
+const { adminGetCommunities, getCommunities, addCommunity, setSecurityCode, newCommunitySetSecurityCode } = require('../controllers/community')
 
-
+//login get Communities
+router.route('/get_communities').get(getCommunities);
 
 //get Communities
-router.route('/get_communities').get(protect, getCommunities);
+router.route('/admin_get_communities').get(protect, adminGetCommunities);
 
-//get Member
-router.route('/get_members').get(protect, getMembers);
+//add Community
+router.route('/add_community').post(protect, addCommunity, newCommunitySetSecurityCode);
 
-//user become a member without existing name
-router.route('/user_become_member_without_name').put(protect, becomeMemberWithoutName);
-
-//user become a memeber with name
-router.route('/user_link_to_member').put(protect, linkToMember);
+//set Security Code 
+router.route('/set_security_code').put(protect, setSecurityCode);
 module.exports = router;
