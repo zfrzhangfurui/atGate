@@ -148,35 +148,35 @@ exports.downloadXlsx = asyncHandler(async (req, res, next) => {
 //@route /record/get_dashboard_data
 //@access Private
 
-exports.downloadXlsx = asyncHandler(async (req, res, next) => {
-    const { member_id } = req.query;
+exports.getDashboardData = asyncHandler(async (req, res, next) => {
+    const user_id = res.locals.user._id;
+    const member = await Member.findOne({ user_id });
+    const member_id = member._id;
     await Record.aggregate(
-        {
+        [{
             $match: {
                 member_id: member_id
             }
         },
         {
-            $project: {
-                _id: 0,
-                transfer
+            $bucket: {
+                groupBy: "$type",
+                boundaries: [0, 1],
+                output: {
+                    "totaltransfer": {
+                        $accumulator: {
+                            init: function () {
+                                return { transfer: 0 }
+                            },
+                            accumulate: function (state) {
+                                console.log(state)
+                            }
+                        }
+                    }
+                }
             }
-        }
+        }]
+
     )
 })
 
-// db.user.aggregate(
-//     // Limit to relevant documents and potentially take advantage of an index
-//     {
-//         $match: {
-//             user_id: "foo"
-//         }
-//     },
-
-//     {
-//         $project: {
-//             user_id: 1,
-//             total: { $add: ["$user_totaldocs", "$user_totalthings"] }
-//         }
-//     }
-// )

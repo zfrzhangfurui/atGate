@@ -79,6 +79,7 @@ exports.setSecurityCode = asyncHandler(async (req, res, next) => {
         }
 
     });
+    // await Community.findOneAndUpdate({ _id: '5f53842d5e83011f24238cc0' }, { securityCode: '123456' });
 })
 
 // @desc new Community Set Security code 

@@ -14,4 +14,5 @@ router.route('/add_community').post(protect, addCommunity, newCommunitySetSecuri
 
 //set Security Code 
 router.route('/set_security_code').put(protect, setSecurityCode);
+// router.route('/set_security_code').put(setSecurityCode);
 module.exports = router;
