@@ -4,6 +4,9 @@ const Record = require('../models/Record');
 const moment = require('moment');
 const Member = require('../models/Member');
 const xlsx = require('xlsx');
+const mongoose = require("mongoose")
+const ObjectId = mongoose.Types.ObjectId;
+const { findByIdAndDelete } = require('../models/Member');
 
 
 // @desc  get Members
@@ -119,64 +122,190 @@ exports.validateFields = asyncHandler(async (req, res, next) => {
 //@access Private
 exports.downloadXlsx = asyncHandler(async (req, res, next) => {
     let filterQuery = {};
+    if (req.query.member_id === '') {
+        return next(errorResponse(400, 'must pick a member'));
+    }
+    console.log(req.query.member_id);
+    filterQuery.member_id = req.query.member_id;
+    const record = await Record.aggregate(
+        [
+            {
+                $match: {
+                    // member_id: req.query.member_id
+                    member_id: ObjectId(filterQuery.member_id)
+                }
+            },
+            {
+                $group: {
+                    _id: { type: "$type" },
+                    transfer: {
+                        $sum: "$transfer"
+                    },
+                    c: {
+                        $sum: "$c"
+                    },
+                    p: {
+                        $sum: "$p"
+                    },
+                    g: {
+                        $sum: "$g"
+                    }
+                }
+            }
+        ]
+
+    )
+
+    let transBalance = 0, cBalance = 0, pBalance = 0, cDeposit, pDeposit, cWithdrow, pWithdrow;
+    for (let i of record) {
+        if (i._id.type) {
+            transBalance = transBalance + i.transfer
+            cBalance = cBalance + i.c;
+            pBalance = pBalance + i.p;
+            cDeposit = i.c;
+            pDeposit = i.p;
+
+        } else {
+            transBalance = transBalance - i.transfer;
+            cBalance = cBalance - i.c;
+            pBalance = pBalance - i.p;
+            cWithdrow = i.c;
+            pWithdrow = i.p;
+
+        }
+    }
+    console.log(transBalance, cBalance, pBalance, cDeposit, pDeposit, cWithdrow, pWithdrow);
+
+    const member = await Member.findOne({ _id: filterQuery.member_id }, 'm_id name');
+    console.log(member);
+    const m_id = member.m_id;
+    const name = member.name;
+    const memberXlsxSummary = [
+        {
+            'name': name,
+            'Member id': m_id,
+            'transfer Balance': transBalance,
+            'C balance': cBalance,
+            'P balance': pBalance,
+            'C Total Deposit': cDeposit,
+            'P Total Deposit': pDeposit,
+            'C Total withdrow': cWithdrow,
+            'P Total withdrow': pWithdrow
+        }
+    ]
+    /***********************************************************************************************/
     const startTime = req.query.starttime || '1970-01-01';
     const endTime = req.query.endtime || '2100-01-01';
+    filterQuery.community_id = res.locals.user.community_id;
+    filterQuery.status = 'active';
+
     filterQuery.createdAt = {
         "$gte": startTime,
         "$lt": endTime
     }
-    filterQuery.community_id = res.locals.user.community_id;
-    filterQuery.status = 'active';
-    req.query.member_id !== '' ? filterQuery.member_id = req.query.member_id : 123;
+
     const docs = await Record.find(filterQuery)
-        // .populate('member_id', '_id m_id')
         .select('-_id name transfer p c g type  createdAt')
-        .sort({ createdAt: -1 })
+        .sort({ name: 1, createdAt: -1 })
         .lean()
         .exec()
+
+    docs.forEach((doc) => {
+        if (doc.type) {
+            delete doc.type
+        } else {
+            doc.transfer = -doc.transfer;
+            doc.p = -doc.p;
+            doc.c = -doc.c;
+            doc.g = -doc.g;
+            delete doc.type
+        }
+        return doc
+    })
     let workBook = xlsx.utils.book_new();
-    let worksheet = xlsx.utils.json_to_sheet(docs);
-    xlsx.utils.book_append_sheet(workBook, worksheet, 'new record');
+    let worksheet1 = xlsx.utils.json_to_sheet(memberXlsxSummary);
+    let worksheet2 = xlsx.utils.json_to_sheet(docs);
+    xlsx.utils.book_append_sheet(workBook, worksheet1, 'Member Summary');
+    xlsx.utils.book_append_sheet(workBook, worksheet2, 'Member Transaction');
     let buffer = xlsx.write(workBook, { type: 'base64', bookType: 'xlsx', bookSST: false });
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.end(new Buffer(buffer, 'base64'));
+    res.end(new Buffer.from(buffer, 'base64'));
 })
 
 
 
-// @desc get_dashboard_data
-//@route /record/get_dashboard_data
+// @desc get_dashboard_general_data
+//@route /record/get_dashboard_general_data
 //@access Private
 
-exports.getDashboardData = asyncHandler(async (req, res, next) => {
+exports.getDashboardGeneralData = asyncHandler(async (req, res, next) => {
     const user_id = res.locals.user._id;
     const member = await Member.findOne({ user_id });
     const member_id = member._id;
-    await Record.aggregate(
+    const record = await Record.aggregate(
         [{
             $match: {
                 member_id: member_id
             }
         },
         {
-            $bucket: {
-                groupBy: "$type",
-                boundaries: [0, 1],
-                output: {
-                    "totaltransfer": {
-                        $accumulator: {
-                            init: function () {
-                                return { transfer: 0 }
-                            },
-                            accumulate: function (state) {
-                                console.log(state)
-                            }
-                        }
-                    }
+            $group: {
+                _id: { type: "$type" },
+                transfer: {
+                    $sum: "$transfer"
+                },
+                c: {
+                    $sum: "$c"
+                },
+                p: {
+                    $sum: "$p"
+                },
+                g: {
+                    $sum: "$g"
                 }
             }
         }]
 
     )
+
+    res.status(200).json({
+        success: true, record
+    })
 })
 
+// @desc get_dashboard_Record_data
+//@route /record/get_dashboard_Record_data
+//@access Private
+exports.getDashboardRecordData = asyncHandler(async (req, res, next) => {
+    const user_id = res.locals.user._id;
+    const member = await Member.findOne({ user_id });
+    const member_id = member._id;
+    //Pagination
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const skip = (page - 1) * limit;
+    const record = await Record.find({ member_id })
+        .select('name transfer p c g type createdBy createdAt')
+        .sort({ createdAt: 1 })
+        .skip(skip)
+        .limit(limit).exec();
+    res.status(200).json({
+        success: true, record: record
+    })
+})
+
+
+// @desc get_dashboard_Record_data
+//@route /record/get_dashboard_Record_data
+//@access Private
+exports.deleteRecord = asyncHandler(async (req, res, next) => {
+
+    const { delete_id } = req.query;
+    console.log(delete_id);
+    const deleted = await Record.findByIdAndDelete({ _id: delete_id });
+    if (deleted) {
+        res.status(200).json({
+            success: true
+        })
+    }
+})

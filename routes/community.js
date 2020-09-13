@@ -1,7 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
-const { adminGetCommunities, getCommunities, addCommunity, setSecurityCode, newCommunitySetSecurityCode } = require('../controllers/community')
+const {
+    adminGetCommunities,
+    getCommunities,
+    addCommunity,
+    setSecurityCode,
+    newCommunitySetSecurityCode,
+    CheckSecurityCode,
+    getCommunitySettings,
+    editCommunitySettings
+} = require('../controllers/community')
 
 //login get Communities
 router.route('/get_communities').get(getCommunities);
@@ -14,5 +23,14 @@ router.route('/add_community').post(protect, addCommunity, newCommunitySetSecuri
 
 //set Security Code 
 router.route('/set_security_code').put(protect, setSecurityCode);
-// router.route('/set_security_code').put(setSecurityCode);
+
+//check Security Code
+router.route('/check_security_code').put(protect, CheckSecurityCode)
+
+//get community settings
+router.route('/get_community_settings').get(protect, getCommunitySettings)
+
+//edit community settings
+router.route('/edit_community_settings').put(protect, editCommunitySettings)
+
 module.exports = router;

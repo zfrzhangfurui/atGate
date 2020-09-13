@@ -30,7 +30,7 @@ exports.adminGetCommunities = asyncHandler(async (req, res, next) => {
 //@route GET /api/v1/community/adminGetCommunities
 //@access Private
 exports.getCommunities = asyncHandler(async (req, res, next) => {
-    const communities = await Community.find({}, 'community');
+    const communities = await Community.find({}, 'community contactPerson communityEmail contactNumber');
     let communities_clone = [];
     for (let item of communities) {
         communities_clone.push(item.toClient());
@@ -39,6 +39,38 @@ exports.getCommunities = asyncHandler(async (req, res, next) => {
         success: true, count: communities.length, list: communities_clone
     })
 })
+
+// @desc Get communitySettings
+//@route GET /api/v1/community/get_community_settings
+//@access Private
+exports.getCommunitySettings = asyncHandler(async (req, res, next) => {
+    const community_id = res.locals.user.community_id;
+    const community = await Community.findOne({ _id: community_id }, 'contactPerson communityEmail contactNumber');
+    if (community) {
+        res.status(200).json({
+            success: true,
+            communitySetting: community
+        })
+    }
+})
+
+// @desc put communitySettings
+//@route Put /api/v1/community/edit_community_settings
+//@access Private
+exports.editCommunitySettings = asyncHandler(async (req, res, next) => {
+    const community_id = res.locals.user.community_id;
+    const { communityEmail, contactNumber, contactPerson } = req.body;
+    console.log(communityEmail, contactNumber, contactPerson, community_id);
+    const community = await Community.updateOne({ _id: community_id }, { communityEmail, contactNumber, contactPerson }, { new: true });
+
+    if (community) {
+        res.status(200).json({
+            success: true,
+            communitySetting: community
+        })
+    }
+})
+
 
 // @desc add Security code for a community
 //@route POST /api/v1/community/add_community
@@ -111,13 +143,34 @@ exports.newCommunitySetSecurityCode = asyncHandler(async (req, res, next) => {
 // @desc check Security code for a community
 //@route 
 //@access Private
-exports.checkSecurityCode = asyncHandler(async (req, res, next) => {
+exports.signupCheckSecurityCode = asyncHandler(async (req, res, next) => {
 
     const { securityCode, community_id } = req.body;
     const community = await Community.findOne({ _id: community_id }).select('+securityCode').exec();
     const isMatch = await community.matchSecurityCode(securityCode);
     if (isMatch) {
         next()
+    } else {
+        res.status(403).json({
+            success: false, securityCode: false
+        })
+    }
+})
+
+
+// @desc check Security code for a community
+//@route 
+//@access Private
+exports.CheckSecurityCode = asyncHandler(async (req, res, next) => {
+
+    const { securityCode } = req.body;
+    const community_id = res.locals.user.community_id;
+    const community = await Community.findOne({ _id: community_id }).select('+securityCode').exec();
+    const isMatch = await community.matchSecurityCode(securityCode);
+    if (isMatch) {
+        res.status(200).json({
+            success: true, isMatch
+        })
     } else {
         res.status(403).json({
             success: false, securityCode: false

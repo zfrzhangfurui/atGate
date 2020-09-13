@@ -88,3 +88,14 @@ exports.sendTokenResponse = (req, res) => {
         token
     })
 }
+
+exports.logout = asyncHandler(async (req, res, next) => {
+    res.cookie('token', 'none', {
+        expires: new Date(Date.now() + 5 * 1000),
+        httpOnly: true
+    });
+
+    res.status(200).json({
+        success: true,
+    })
+})

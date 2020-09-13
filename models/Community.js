@@ -21,6 +21,17 @@ const CommunitySchema = new mongoose.Schema({
             ref: 'Member'
         }
     ],
+    contactPerson: {
+        type: String,
+    },
+    communityEmail: {
+        type: String
+    },
+    contactNumber: {
+        type: String
+    }
+
+
 });
 
 

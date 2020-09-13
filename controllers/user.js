@@ -2,17 +2,24 @@ const User = require('../models/User');
 const errorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middleware/async');
 const ErrorResponse = require('../utils/errorResponse');
+const Member = require('../models/Member');
 
 //get user information (role, name, email, etc...)
 exports.getUserInfo = asyncHandler(async (req, res, next) => {
     try {
         const user = await User.findById(req.decoded.id);
+        const user_id = user._id;
+        const member = await Member.findOne({ user_id });
+        const name = member.name;
+        const address = member.address;
         console.log(user);
         res.status(200).json({
             success: true,
             userInfo: {
                 email: user.email,
                 role: user.role,
+                name,
+                address
             }
         })
     } catch (err) {

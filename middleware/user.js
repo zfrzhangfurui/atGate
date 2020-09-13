@@ -9,8 +9,7 @@ exports.getUserToken = (req, res, next) => {
 
     if (req.cookies.token) {
         token = req.cookies.token;
-    }
-    if (!token) {
+    } else {
         return next(new ErrorResponse('Not authorize to access this route', 401))
     }
     try {

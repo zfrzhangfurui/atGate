@@ -22,6 +22,7 @@ const auth = require('./routes/auth');
 const user = require('./routes/user');
 const community = require('./routes/community');
 const member = require('./routes/member');
+const email = require('./routes/email');
 const app = express();
 
 //Body parser
@@ -40,6 +41,7 @@ app.use('/api/v1/record', record);
 app.use('/api/v1/user', user);
 app.use('/api/v1/community', community);
 app.use('/api/v1/member', member);
+app.use('/api/v1/email', email);
 
 app.use(errorHandler);
 //console.log(process.env.PORT);
