@@ -34,6 +34,13 @@ if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
 }
 //app.use(logger);
+
+//CORS 
+app.use(function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "YOUR-DOMAIN.TLD"); // update to match the domain you will make the request from
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+});
 //Mount routers
 app.use('/api/v1/auth', auth);
 app.use('/api/v1/transactions', transactions);
@@ -42,7 +49,6 @@ app.use('/api/v1/user', user);
 app.use('/api/v1/community', community);
 app.use('/api/v1/member', member);
 app.use('/api/v1/email', email);
-
 app.use(errorHandler);
 //console.log(process.env.PORT);
 // /const PORT = 5000;
@@ -61,3 +67,5 @@ process.on('unhandleReejection', (err, promise) => {
     console.log(`unhandled rejection(promise): ${err.message}`.red);
     server.close(() => process.exit(1));
 })
+
+
